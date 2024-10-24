@@ -1,7 +1,9 @@
 import json
 import time
 import queue
+import timeit
 from abc import abstractmethod, ABC
+
 
 
 class Problema:
@@ -53,8 +55,9 @@ class Nodo:
         self.costeMasDistancia = costeMasDistancia
 
     def __eq__(self, otro):
-        return self.estado == otro.estado
-
+        return hash(self.estado) == hash(otro)
+    def __hash__(self):
+        return hash(self.estado)
     def __lt__(self, otro):
 
         if self.id < otro.id:
@@ -106,35 +109,33 @@ class Busqueda(ABC):
         longitud, latitud = self.problema.interseccionesCoordenadas[self.problema.inicio]
         nodoProgenitor = Nodo(self.problema.inicio, longitud, latitud)
         profundidad = 0
-        hashFinal = hash(estadoFinal)
         listaExpandidos = set()
+        listaExpandidos.add(1)
         expandidos = 1
         abiertos = 0
-        start = time.time()
+        tiempo_inicio = timeit.default_timer()
         self.listaAbiertos = self.insertarNodo(nodoProgenitor, self.listaAbiertos)
-        print(self.listaAbiertos)
+        print(len(self.listaAbiertos))
         while self.listaAbiertos:
             nodoExpandido = self.extraerNodo(self.listaAbiertos)
             estadoNodoExpandido = Estado(nodoExpandido.id, nodoExpandido.longitud, nodoExpandido.latitud)
             if estadoNodoExpandido not in listaExpandidos:
                 expandidos += 1
                 if estadoNodoExpandido.__eq__(estadoFinal):
-                    final = time.time()
-                    total = final - start
-                    print("Estado actual", estadoNodoExpandido.id)
-                    print("Estado deseado", estadoFinal.id)
-                    print("Lista nodos:")
-                    print()
-                    return total
+                    tiempo_final = timeit.default_timer()
+                    segundos = tiempo_final - tiempo_inicio
+                    print("Estado        actual: ", estadoNodoExpandido.id)
+                    print("Estado final deseado: ", estadoFinal.id)
+                    print(f"{segundos:.10f} segundos")
+                    print(self.listaExpantidos)
+                    return True
                 nuevosAbiertos = self.nodosSucesores(nodoExpandido)
                 abiertos += len(nuevosAbiertos)
                 for abierto in nuevosAbiertos:
                     self.profundidad = max(profundidad, abierto.profundidad)
                     self.insertarNodo(abierto, self.listaAbiertos)
-                listaExpandidos.add(estadoNodoExpandido)
+                listaExpandidos.add(nodoExpandido)
         return None
-#b = Busqueda()
-#print(b.interseccionAccion)
 
 class BusquedaAnchura(Busqueda):
 
@@ -183,7 +184,7 @@ class BusquedaProfundidad(Busqueda):
             return False
 
 
-class FirstFit(Busqueda):
+class PrimeroMejor(Busqueda):
 
     def __init__(self):
         super().__init__()
@@ -201,7 +202,7 @@ class FirstFit(Busqueda):
         pass
 
 
-class AStar(Busqueda):
+class AEstrella(Busqueda):
 
     def __init__(self):
         super().__init__()
@@ -218,8 +219,7 @@ class AStar(Busqueda):
     def vacio(self):
         pass
 
-ba = BusquedaProfundidad()
+ba = BusquedaAnchura()
+
 print(ba.buscar(Estado(ba.problema.final, ba.problema.interseccionesCoordenadas[ba.problema.final][0],
-                       ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
-#p = Problema()
-#print(p.interseccionAccion)
+                      ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
