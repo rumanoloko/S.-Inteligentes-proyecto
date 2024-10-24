@@ -54,17 +54,21 @@ class Nodo:
         self.coste = coste
         self.costeMasDistancia = costeMasDistancia
 
+    def __repr__(self):
+        padre_id = self.padre.id if self.padre is not None else None
+        return f"Nodo(id={self.id}, longitud={self.longitud}, latitud={self.latitud}, padre={padre_id}, coste={self.coste})"
+
     def __eq__(self, otro):
         return hash(self.estado) == hash(otro)
+
     def __hash__(self):
         return hash(self.estado)
-    def __lt__(self, otro):
 
+    def __lt__(self, otro):
         if self.id < otro.id:
             return True
         elif self.id == otro.id:
             return self.coste < otro.coste
-
         else:
             return False
 
@@ -110,12 +114,10 @@ class Busqueda(ABC):
         nodoProgenitor = Nodo(self.problema.inicio, longitud, latitud)
         profundidad = 0
         listaExpandidos = set()
-        listaExpandidos.add(1)
         expandidos = 1
         abiertos = 0
         tiempo_inicio = timeit.default_timer()
         self.listaAbiertos = self.insertarNodo(nodoProgenitor, self.listaAbiertos)
-        print(len(self.listaAbiertos))
         while self.listaAbiertos:
             nodoExpandido = self.extraerNodo(self.listaAbiertos)
             estadoNodoExpandido = Estado(nodoExpandido.id, nodoExpandido.longitud, nodoExpandido.latitud)
@@ -124,18 +126,18 @@ class Busqueda(ABC):
                 if estadoNodoExpandido.__eq__(estadoFinal):
                     tiempo_final = timeit.default_timer()
                     segundos = tiempo_final - tiempo_inicio
-                    print("Estado        actual: ", estadoNodoExpandido.id)
+                    print(f"Tiempo empleado: {segundos:.10f} segundos")
+                    print("       Estado actual: ", estadoNodoExpandido.id)
                     print("Estado final deseado: ", estadoFinal.id)
-                    print(f"{segundos:.10f} segundos")
-                    print(self.listaExpantidos)
-                    return True
+                    print("listaExpandidos: ",listaExpandidos)
+                    return "Exito"
                 nuevosAbiertos = self.nodosSucesores(nodoExpandido)
                 abiertos += len(nuevosAbiertos)
                 for abierto in nuevosAbiertos:
                     self.profundidad = max(profundidad, abierto.profundidad)
                     self.insertarNodo(abierto, self.listaAbiertos)
-                listaExpandidos.add(nodoExpandido)
-        return None
+                    listaExpandidos.add(nodoExpandido)
+        return "No podemos llegar al nodo destino"
 
 class BusquedaAnchura(Busqueda):
 
