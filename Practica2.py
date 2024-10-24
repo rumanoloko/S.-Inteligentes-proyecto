@@ -5,7 +5,6 @@ import timeit
 from abc import abstractmethod, ABC
 
 
-
 class Problema:
     def __init__(self):
         nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
@@ -65,12 +64,13 @@ class Nodo:
         return hash(self.estado)
 
     def __lt__(self, otro):
-        if self.id < otro.id:
-            return True
-        elif self.id == otro.id:
-            return self.coste < otro.coste
-        else:
-            return False
+        return self.coste < otro.coste
+        #if self.id < otro.id:
+            #return True
+        #elif self.id == otro.id:
+            #return self.coste < otro.coste
+        #else:
+            #return False
 
 
 class Heuristica:
@@ -169,8 +169,8 @@ class BusquedaAnchura(Busqueda):
         valor = listaNodos.pop(0)
         return valor
 
-    def vacio(self, lista_nodo):
-        if len(lista_nodo) == 0:
+    def vacio(self, listaNodos):
+        if len(listaNodos) == 0:
             return True
         else:
             return False
@@ -182,11 +182,6 @@ class BusquedaProfundidad(Busqueda):
         super().__init__()
         self.listaAbiertos = []
 
-    def crearLista(self, nodo):
-        lista = []
-        lista.append(nodo)
-        return lista
-
     def insertarNodo(self, nodo, listaNodos):
         listaNodos.append(nodo)
         return listaNodos
@@ -195,8 +190,8 @@ class BusquedaProfundidad(Busqueda):
         valor = listaNodos.pop()
         return valor
 
-    def vacio(self, lista_nodo):
-        if len(lista_nodo) == 0:
+    def vacio(self, listaNodos):
+        if len(listaNodos) == 0:
             return True
         else:
             return False
@@ -206,38 +201,48 @@ class PrimeroMejor(Busqueda):
 
     def __init__(self):
         super().__init__()
+        self.listaAbiertos = queue.PriorityQueue()
 
-    def crearLista(self, nodo):
-        pass
 
-    def insertar_nodo(self, nodo, listaNodos):
-        pass
+    def insertarNodo(self, nodo, listaNodos):
+        listaNodos.put(nodo)
+        return listaNodos
 
     def extraerNodo(self, listaNodos):
-        pass
+        return listaNodos.get()
 
-    def vacio(self):
-        pass
+    def vacio(self, listaNodos):
+        if listaNodos.empty():
+            return True
+        else:
+            return False
 
 
 class AEstrella(Busqueda):
 
     def __init__(self):
         super().__init__()
-
-    def crearLista(self, nodo):
-        pass
+        self.listaAbiertos = queue.PriorityQueue()
 
     def insertarNodo(self, nodo, listaNodos):
-        pass
+        listaNodos.put(nodo)
+        return listaNodos
 
     def extraerNodo(self, listaNodos):
-        pass
+        return listaNodos.get()
 
-    def vacio(self):
-        pass
+    def vacio(self, listaNodos):
+        if listaNodos.empty():
+            return True
+        else:
+            return False
 
-ba = BusquedaProfundidad()
+ba = BusquedaAnchura()
 
 print(ba.buscar(Estado(ba.problema.final, ba.problema.interseccionesCoordenadas[ba.problema.final][0],
                       ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
+
+ba2 = AEstrella()
+
+print(ba2.buscar(Estado(ba2.problema.final, ba2.problema.interseccionesCoordenadas[ba2.problema.final][0],
+                      ba2.problema.interseccionesCoordenadas[ba2.problema.final][1])))
