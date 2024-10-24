@@ -126,18 +126,34 @@ class Busqueda(ABC):
                 if estadoNodoExpandido.__eq__(estadoFinal):
                     tiempo_final = timeit.default_timer()
                     segundos = tiempo_final - tiempo_inicio
-                    print(f"Tiempo empleado: {segundos:.10f} segundos")
-                    print("       Estado actual: ", estadoNodoExpandido.id)
-                    print("Estado final deseado: ", estadoFinal.id)
-                    print("listaExpandidos: ",listaExpandidos)
-                    return "Exito"
+                    self.camino(segundos, expandidos, abiertos, self.profundidad, nodoExpandido, listaExpandidos)
+                    return "Retorno del metodo buscar() = Exito"
                 nuevosAbiertos = self.nodosSucesores(nodoExpandido)
                 abiertos += len(nuevosAbiertos)
                 for abierto in nuevosAbiertos:
                     self.profundidad = max(profundidad, abierto.profundidad)
                     self.insertarNodo(abierto, self.listaAbiertos)
                     listaExpandidos.add(nodoExpandido)
-        return "No podemos llegar al nodo destino"
+        return "Retorno del metodo buscar() = Fracaso"
+
+    def camino(self, segundos, expandidos, abiertos, profundidad, nodoExpandido, listaExpantidos):
+        print(f" Tiempo empleado: {segundos:.10f} segundos")
+        print("Nodos expandidos: ", expandidos)
+        print("  Nodos abiertos: ", abiertos)
+        print("     Profundidad: ", profundidad)
+        print("    Nodo destino: ", nodoExpandido)
+        print("             Fin: ",self.problema.final)
+        print("          Origen: ",self.problema.inicio)
+        #print("Lista expandidos: ", listaExpantidos)
+        nodo = nodoExpandido
+        lista = []
+        while nodo.padre is not None:
+            lista.append([(nodo.padre.id),(nodo.id),(nodo.coste)])
+            nodo = nodo.padre
+        lista = reversed(lista)
+        print("Camino")
+        for x in lista:
+            print(f"{x[0]} ------({x[2]:<19})-----> {x[1]}")
 
 class BusquedaAnchura(Busqueda):
 
@@ -221,7 +237,7 @@ class AEstrella(Busqueda):
     def vacio(self):
         pass
 
-ba = BusquedaAnchura()
+ba = BusquedaProfundidad()
 
 print(ba.buscar(Estado(ba.problema.final, ba.problema.interseccionesCoordenadas[ba.problema.final][0],
                       ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
