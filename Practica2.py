@@ -40,6 +40,7 @@ class Estado():
     def __eq__(self, otro):
         return self.id == otro.id
 
+
 class Nodo:
 
     def __init__(self, id, longitud, latitud, profundidad= 0, padre = None,
@@ -64,19 +65,14 @@ class Nodo:
         return hash(self.estado)
 
     def __lt__(self, otro):
-        return self.coste < otro.coste
-        #if self.id < otro.id:
-            #return True
-        #elif self.id == otro.id:
-            #return self.coste < otro.coste
-        #else:
-            #return False
-
+        if self.coste != otro.coste:
+            return self.coste < otro.coste
+        return self.id < otro.id
 
 class Heuristica:
-
-    def calculo_heuristica(self, estado1: Estado, estado2: Estado):
-        return abs(estado1.longitud - estado2.longitud) + abs(estado1.latitud - estado2.latitud)
+    @staticmethod
+    def calculo_heuristica(estado1: Estado, tuplaCoordenadas):
+        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1])
 
 
 # Se pone que hereda de ABC para así decir que es una clase Abstracta por lo que cualquiera que herede de esta
@@ -118,7 +114,7 @@ class Busqueda(ABC):
         abiertos = 0
         tiempo_inicio = timeit.default_timer()
         self.listaAbiertos = self.insertarNodo(nodoProgenitor, self.listaAbiertos)
-        while self.listaAbiertos:
+        while not self.vacio():
             nodoExpandido = self.extraerNodo(self.listaAbiertos)
             estadoNodoExpandido = Estado(nodoExpandido.id, nodoExpandido.longitud, nodoExpandido.latitud)
             if estadoNodoExpandido not in listaExpandidos:
@@ -169,11 +165,8 @@ class BusquedaAnchura(Busqueda):
         valor = listaNodos.pop(0)
         return valor
 
-    def vacio(self, listaNodos):
-        if len(listaNodos) == 0:
-            return True
-        else:
-            return False
+    def vacio(self):
+        return len(self.listaAbiertos) == 0
 
 
 class BusquedaProfundidad(Busqueda):
@@ -190,11 +183,8 @@ class BusquedaProfundidad(Busqueda):
         valor = listaNodos.pop()
         return valor
 
-    def vacio(self, listaNodos):
-        if len(listaNodos) == 0:
-            return True
-        else:
-            return False
+    def vacio(self):
+        return len(self.listaAbiertos) == 0
 
 
 class PrimeroMejor(Busqueda):
@@ -205,17 +195,16 @@ class PrimeroMejor(Busqueda):
 
 
     def insertarNodo(self, nodo, listaNodos):
-        listaNodos.put(nodo)
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        nodo.costeMasDistancia = disManh
+        listaNodos.put((nodo.costeMasDistancia, nodo))
         return listaNodos
 
     def extraerNodo(self, listaNodos):
-        return listaNodos.get()
+        return listaNodos.get()[1]
 
-    def vacio(self, listaNodos):
-        if listaNodos.empty():
-            return True
-        else:
-            return False
+    def vacio(self):
+        return self.listaAbiertos.empty()
 
 
 class AEstrella(Busqueda):
@@ -225,24 +214,44 @@ class AEstrella(Busqueda):
         self.listaAbiertos = queue.PriorityQueue()
 
     def insertarNodo(self, nodo, listaNodos):
-        listaNodos.put(nodo)
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        nodo.costeMasDistancia = disManh + nodo.coste
+        listaNodos.put((nodo.costeMasDistancia, nodo))
         return listaNodos
 
     def extraerNodo(self, listaNodos):
-        return listaNodos.get()
+        return listaNodos.get()[1]
 
-    def vacio(self, listaNodos):
-        if listaNodos.empty():
-            return True
-        else:
-            return False
+    def vacio(self):
+        return self.listaAbiertos.empty()
 
-ba = BusquedaAnchura()
 
-print(ba.buscar(Estado(ba.problema.final, ba.problema.interseccionesCoordenadas[ba.problema.final][0],
-                      ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
+if __name__ == "__main__":
+    while True:
+        print("         1) Búsqueda en Anchura")
+        print("         2) Búsqueda en Profundidad")
+        print("         3) Primero es mejor")
+        print("         4) A Estrella")
+        print("Otro valor) Salir")
+        try:
+            valor = int(input("Introduce un valor numérico, por favor: "))
+        except ValueError:
+            print("Ese no es un número válido.")
+            continue
 
-ba2 = AEstrella()
+        match valor:
+            case 1:
+                z = BusquedaAnchura()
+            case 2:
+                z = BusquedaProfundidad()
+            case 3:
+                z = PrimeroMejor()
+            case 4:
+                z = AEstrella()
+            case _:
+                print("Fin programa.....")
+                break
 
-print(ba2.buscar(Estado(ba2.problema.final, ba2.problema.interseccionesCoordenadas[ba2.problema.final][0],
-                      ba2.problema.interseccionesCoordenadas[ba2.problema.final][1])))
+        print(z.buscar(Estado(z.problema.final,
+                              z.problema.interseccionesCoordenadas[z.problema.final][0],
+                              z.problema.interseccionesCoordenadas[z.problema.final][1])))
