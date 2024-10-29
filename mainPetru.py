@@ -6,11 +6,11 @@ from abc import abstractmethod, ABC
 
 
 class Problema:
-    def __init__(self):
-        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
-        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_de_francisco_5000_3.json"
-        nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_agustina_aroca_albacete_5000_0.json"
-        with open(nombre_archivo, 'r') as archivo:
+    def __init__(self, info_json):
+        # nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
+        # nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_de_francisco_5000_3.json"
+        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_agustina_aroca_albacete_5000_0.json"
+        with open(info_json, 'r') as archivo:
             problema = json.load(archivo)
 
         self.inicio = problema['initial']
@@ -31,7 +31,8 @@ class Problema:
                 segmento['distance'] / (segmento['speed'] / 3.6)
             ))
 
-class Estado():
+
+class Estado:
 
     def __init__(self, id, longitud, latitud):
         self.id = id
@@ -47,8 +48,8 @@ class Estado():
 
 class Nodo:
 
-    def __init__(self, id, longitud, latitud, profundidad= 0, padre = None,
-                 coste = 0.0, costeMasDistancia = 0.0):
+    def __init__(self, id, longitud, latitud, profundidad=0, padre=None,
+                 coste=0.0):
         self.id = id
         self.longitud = longitud
         self.latitud = latitud
@@ -56,7 +57,7 @@ class Nodo:
         self.profundidad = profundidad
         self.padre = padre
         self.coste = coste
-        self.costeMasDistancia = costeMasDistancia
+
 
     def __repr__(self):
         padre_id = self.padre.id if self.padre is not None else None
@@ -73,10 +74,11 @@ class Nodo:
             return self.coste < otro.coste
         return self.id < otro.id
 
+
 class Heuristica:
-    @staticmethod
+
     def calculo_heuristica(estado1: Estado, tuplaCoordenadas, velMax):
-        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1])/(velMax/3.6)
+        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1]) / (velMax / 3.6)
 
 
 # Se pone que hereda de ABC para así decir que es una clase Abstracta por lo que cualquiera que herede de esta
@@ -85,15 +87,15 @@ class Busqueda(ABC):
 
     def __init__(self):
         self.problema = Problema()
-        self.listaExpantidos = set()
+        self.listaExpandidos = None
         self.listaAbiertos = None
 
     @abstractmethod
-    def insertarNodo(self, nodo, listaNodos):
+    def insertarNodo(self, nodo, lista_nodos):
         pass
 
     @abstractmethod
-    def extraerNodo(self, listaNodos):
+    def extraerNodo(self, lista_nodos):
         pass
 
     @abstractmethod
@@ -114,21 +116,21 @@ class Busqueda(ABC):
 
     def buscar(self, estadoFinal):
         longitud, latitud = self.problema.interseccionesCoordenadas[self.problema.inicio]
-        nodoProgenitor = Nodo(self.problema.inicio, longitud, latitud)
+        nodo_progenitor = Nodo(self.problema.inicio, longitud, latitud)
         profundidad = 0
-        listaExpandidos = set()
+        lista_expandidos = set()
         expandidos = 1
         generados = 0
         tiempo_inicio = timeit.default_timer()
-        self.listaAbiertos = self.insertarNodo(nodoProgenitor, self.listaAbiertos)
-        while not self.vacio():
+        self.listaAbiertos = self.insertarNodo(nodo_progenitor, self.listaAbiertos)
+        while not self.vacio(self.listaAbiertos):
             nodo = self.extraerNodo(self.listaAbiertos)
-            estadoNodoExpandido = Estado(nodo.id, nodo.longitud, nodo.latitud)
-            if estadoNodoExpandido not in listaExpandidos:
-                if estadoNodoExpandido.__eq__(estadoFinal):
+            estado_nodoExpandido = Estado(nodo.id, nodo.longitud, nodo.latitud)
+            if estado_nodoExpandido not in lista_expandidos:
+                if estado_nodoExpandido.__eq__(estadoFinal):
                     tiempo_final = timeit.default_timer()
                     segundos = tiempo_final - tiempo_inicio
-                    self.camino(segundos, expandidos, generados, self.profundidad, nodo, listaExpandidos)
+                    self.camino(segundos, expandidos, generados, self.profundidad, nodo, lista_expandidos)
                     return "Retorno del metodo buscar() = Exito"
                 nuevosAbiertos = self.nodosSucesores(nodo)
                 expandidos += 1
@@ -136,14 +138,14 @@ class Busqueda(ABC):
                 for abierto in nuevosAbiertos:
                     self.profundidad = max(profundidad, abierto.profundidad)
                     self.insertarNodo(abierto, self.listaAbiertos)
-                    listaExpandidos.add(nodo)
+                    lista_expandidos.add(nodo)
         return "Retorno del metodo buscar() = Fracaso"
 
     def camino(self, segundos, expandidos, abiertos, profundidad, nodoExpandido, listaExpantidos):
         nodo = nodoExpandido
         lista = []
         while nodo.padre is not None:
-            lista.append([(nodo.padre.id),(nodo.id),(nodo.coste)])
+            lista.append([nodo.padre.id, nodo.id, nodo.coste])
             nodo = nodo.padre
         lista = reversed(lista)
         print("Camino")
@@ -159,24 +161,25 @@ class Busqueda(ABC):
         print("             Fin: ", self.problema.final)
         print("          Origen: ", self.problema.inicio)
         print("   Tamaño camino:", lista.__sizeof__())
-        #print("Lista expandidos: ", listaExpantidos)
+        # print("Lista expandidos: ", listaExpandidos)
 
 
 class BusquedaAnchura(Busqueda):
 
     def __init__(self):
+
         super().__init__()
         self.listaAbiertos = []
 
-    def insertarNodo(self, nodo, listaNodos):
-        listaNodos.append(nodo)
-        return listaNodos
+    def insertarNodo(self, nodo, lista_nodos):
+        lista_nodos.append(nodo)
+        return lista_nodos
 
-    def extraerNodo(self, listaNodos):
-        valor = listaNodos.pop(0)
+    def extraerNodo(self, lista_nodos):
+        valor = lista_nodos.pop(0)
         return valor
 
-    def vacio(self):
+    def vacio(self, lista_nodo):
         return len(self.listaAbiertos) == 0
 
 
@@ -186,16 +189,16 @@ class BusquedaProfundidad(Busqueda):
         super().__init__()
         self.listaAbiertos = []
 
-    def insertarNodo(self, nodo, listaNodos):
-        listaNodos.insert(0, nodo)
-        return listaNodos
+    def insertarNodo(self, nodo, lista_nodos):
+        lista_nodos.insert(0, nodo)
+        return lista_nodos
 
-    def extraerNodo(self, listaNodos):
-        valor = listaNodos.pop()
+    def extraerNodo(self, lista_nodos):
+        valor = lista_nodos.pop()
         return valor
 
-    def vacio(self):
-        return len(self.listaAbiertos) == 0
+    def vacio(self,lista_nodos):
+        return len(lista_nodos) == 0
 
 
 class PrimeroMejor(Busqueda):
@@ -204,18 +207,17 @@ class PrimeroMejor(Busqueda):
         super().__init__()
         self.listaAbiertos = queue.PriorityQueue()
 
-
-    def insertarNodo(self, nodo, listaNodos):
-        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.velMax)
+    def insertarNodo(self, nodo, lista_nodos):
+        disManh = Heuristica.calculo_heuristica(nodo.estado,self.problema.interseccionesCoordenadas[self.problema.final], self.problema.velMax)
         nodo.costeMasDistancia = disManh
-        listaNodos.put(nodo)
-        return listaNodos
+        lista_nodos.put(nodo)
+        return lista_nodos
 
-    def extraerNodo(self, listaNodos):
-        return listaNodos.get()
+    def extraerNodo(self, lista_nodos):
+        return lista_nodos.get()
 
-    def vacio(self):
-        return self.listaAbiertos.empty()
+    def vacio(self, lista_nodos):
+        return lista_nodos.empty()
 
 
 class AEstrella(Busqueda):
@@ -224,20 +226,25 @@ class AEstrella(Busqueda):
         super().__init__()
         self.listaAbiertos = queue.PriorityQueue()
 
-    def insertarNodo(self, nodo, listaNodos):
-        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.velMax)
+    def insertarNodo(self, nodo, lista_nodos):
+        disManh = Heuristica.calculo_heuristica(nodo.estado,
+                                                self.problema.interseccionesCoordenadas[self.problema.final],
+                                                self.problema.velMax)
         nodo.costeMasDistancia = disManh + nodo.coste
-        listaNodos.put(nodo)
-        return listaNodos
+        lista_nodos.put(nodo)
+        return lista_nodos
 
-    def extraerNodo(self, listaNodos):
-        return listaNodos.get()
+    def extraerNodo(self, lista_nodos):
+        return lista_nodos.get()
 
-    def vacio(self):
-        return self.listaAbiertos.empty()
+    def vacio(self, lista_nodos):
+        return lista_nodos.empty()
 
 
 if __name__ == "__main__":
+
+    archivo_json = "AQUI LA RUTA DEL ARCHIVO QUE QUERAMOS."
+    problema = Problema(archivo_json)
     while True:
         print("         1) Búsqueda en Anchura")
         print("         2) Búsqueda en Profundidad")

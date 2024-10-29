@@ -31,7 +31,7 @@ class Problema:
                 segmento['distance'] / (segmento['speed'] / 3.6)
             ))
 
-class Estado():
+class Estado:
 
     def __init__(self, id, longitud, latitud):
         self.id = id
