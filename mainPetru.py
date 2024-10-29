@@ -63,7 +63,7 @@ class Nodo:
         return f"Nodo(id={self.id}, longitud={self.longitud}, latitud={self.latitud}, padre={padre_id}, coste={self.coste})"
 
     def __eq__(self, otro):
-        return hash(self.estado) == hash(otro)
+        return isinstance(otro, Nodo) and self.id == otro.id
 
     def __hash__(self):
         return hash(self.estado)
@@ -104,16 +104,8 @@ class Busqueda(ABC):
         sucesores = []
         if nodo.id in self.problema.interseccionAccion:
             pq = self.problema.interseccionAccion[nodo.id]
-            print("=====================")
-            print("=====================")
-            print("=====================")
-            print("=====================")
-            print("=====================")
-            print("=====================")
             while not pq.empty():
                 accion = pq.get()
-                print(accion)
-                
                 nodoNuevo = Nodo(accion[0], self.problema.interseccionesCoordenadas[accion[0]][0],
                                  self.problema.interseccionesCoordenadas[accion[0]][1],
                                  nodo.profundidad + 1, nodo, nodo.coste + accion[1])
@@ -166,6 +158,7 @@ class Busqueda(ABC):
         print("    Nodo destino: ", nodoExpandido)
         print("             Fin: ", self.problema.final)
         print("          Origen: ", self.problema.inicio)
+        print("   Tamaño camino:", lista.__sizeof__())
         #print("Lista expandidos: ", listaExpantidos)
 
 
@@ -215,11 +208,11 @@ class PrimeroMejor(Busqueda):
     def insertarNodo(self, nodo, listaNodos):
         disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.velMax)
         nodo.costeMasDistancia = disManh
-        listaNodos.put((nodo.costeMasDistancia, nodo))
+        listaNodos.put(nodo)
         return listaNodos
 
     def extraerNodo(self, listaNodos):
-        return listaNodos.get()[1]
+        return listaNodos.get()
 
     def vacio(self):
         return self.listaAbiertos.empty()
@@ -234,11 +227,11 @@ class AEstrella(Busqueda):
     def insertarNodo(self, nodo, listaNodos):
         disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.velMax)
         nodo.costeMasDistancia = disManh + nodo.coste
-        listaNodos.put((nodo.costeMasDistancia, nodo))
+        listaNodos.put(nodo)
         return listaNodos
 
     def extraerNodo(self, listaNodos):
-        return listaNodos.get()[1]
+        return listaNodos.get()
 
     def vacio(self):
         return self.listaAbiertos.empty()

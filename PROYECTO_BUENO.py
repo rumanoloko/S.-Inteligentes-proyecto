@@ -17,14 +17,16 @@ class Problema:
         self.final = problema['final']
         self.interseccionAccion = {}
         self.interseccionesCoordenadas = {}
-
+        self.MaxVel = 0
         for interseccion in problema['intersections']:
             identificador = interseccion['identifier']
             self.interseccionesCoordenadas[identificador] = (interseccion['longitude'], interseccion['latitude'])
-            self.interseccionAccion[identificador] = []
 
         for segmento in problema['segments']:
-            self.interseccionAccion[segmento['origin']].append((
+            if segmento['origin'] not in self.interseccionAccion:
+                self.interseccionAccion[segmento['origin']] = queue.PriorityQueue()
+            self.MaxVel = max(self.MaxVel, segmento['speed'])
+            self.interseccionAccion[segmento['origin']].put((
                 segmento['destination'],
                 segmento['distance'] / (segmento['speed'] / 3.6)
             ))
@@ -73,8 +75,8 @@ class Nodo:
 
 class Heuristica:
     @staticmethod
-    def calculo_heuristica(estado1: Estado, tuplaCoordenadas):
-        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1])
+    def calculo_heuristica(estado1: Estado, tuplaCoordenadas, MaxVel):
+        return (abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1]))/(MaxVel/3.6)
 
 
 # Se pone que hereda de ABC para así decir que es una clase Abstracta por lo que cualquiera que herede de esta
@@ -199,7 +201,7 @@ class PrimeroMejor(Busqueda):
 
 
     def insertarNodo(self, nodo, listaNodos):
-        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.MaxVel)
         nodo.costeMasDistancia = disManh
         listaNodos.put((nodo.costeMasDistancia, nodo))
         return listaNodos
@@ -218,7 +220,7 @@ class AEstrella(Busqueda):
         self.listaAbiertos = queue.PriorityQueue()
 
     def insertarNodo(self, nodo, listaNodos):
-        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final], self.problema.MaxVel)
         nodo.costeMasDistancia = disManh + nodo.coste
         listaNodos.put((nodo.costeMasDistancia, nodo))
         return listaNodos
