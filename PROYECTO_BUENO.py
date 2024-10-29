@@ -1,12 +1,15 @@
 import json
 import time
 import queue
+import timeit
 from abc import abstractmethod, ABC
 
 
 class Problema:
     def __init__(self):
-        nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
+        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
+        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_de_francisco_5000_3.json"
+        nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_agustina_aroca_albacete_5000_0.json"
         with open(nombre_archivo, 'r') as archivo:
             problema = json.load(archivo)
 
@@ -39,6 +42,7 @@ class Estado():
     def __eq__(self, otro):
         return self.id == otro.id
 
+
 class Nodo:
 
     def __init__(self, id, longitud, latitud, profundidad= 0, padre = None,
@@ -52,24 +56,25 @@ class Nodo:
         self.coste = coste
         self.costeMasDistancia = costeMasDistancia
 
+    def __repr__(self):
+        padre_id = self.padre.id if self.padre is not None else None
+        return f"Nodo(id={self.id}, longitud={self.longitud}, latitud={self.latitud}, padre={padre_id}, coste={self.coste})"
+
     def __eq__(self, otro):
-        return self.estado == otro.estado
+        return hash(self.estado) == hash(otro)
+
+    def __hash__(self):
+        return hash(self.estado)
 
     def __lt__(self, otro):
-
-        if self.id < otro.id:
-            return True
-        elif self.id == otro.id:
+        if self.coste != otro.coste:
             return self.coste < otro.coste
-
-        else:
-            return False
-
+        return self.id < otro.id
 
 class Heuristica:
-
-    def calculo_heuristica(self, estado1: Estado, estado2: Estado):
-        return abs(estado1.longitud - estado2.longitud) + abs(estado1.latitud - estado2.latitud)
+    @staticmethod
+    def calculo_heuristica(estado1: Estado, tuplaCoordenadas):
+        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1])
 
 
 # Se pone que hereda de ABC para así decir que es una clase Abstracta por lo que cualquiera que herede de esta
@@ -106,35 +111,49 @@ class Busqueda(ABC):
         longitud, latitud = self.problema.interseccionesCoordenadas[self.problema.inicio]
         nodoProgenitor = Nodo(self.problema.inicio, longitud, latitud)
         profundidad = 0
-        hashFinal = hash(estadoFinal)
         listaExpandidos = set()
         expandidos = 1
         abiertos = 0
-        start = time.time()
+        tiempo_inicio = timeit.default_timer()
         self.listaAbiertos = self.insertarNodo(nodoProgenitor, self.listaAbiertos)
-        print(self.listaAbiertos)
-        while self.listaAbiertos:
+        while not self.vacio():
             nodoExpandido = self.extraerNodo(self.listaAbiertos)
             estadoNodoExpandido = Estado(nodoExpandido.id, nodoExpandido.longitud, nodoExpandido.latitud)
             if estadoNodoExpandido not in listaExpandidos:
                 expandidos += 1
                 if estadoNodoExpandido.__eq__(estadoFinal):
-                    final = time.time()
-                    total = final - start
-                    print("Estado actual", estadoNodoExpandido.id)
-                    print("Estado deseado", estadoFinal.id)
-                    print("Lista nodos:")
-                    print()
-                    return total
+                    tiempo_final = timeit.default_timer()
+                    segundos = tiempo_final - tiempo_inicio
+                    self.camino(segundos, expandidos, abiertos, self.profundidad, nodoExpandido, listaExpandidos)
+                    return "Retorno del metodo buscar() = Exito"
                 nuevosAbiertos = self.nodosSucesores(nodoExpandido)
                 abiertos += len(nuevosAbiertos)
                 for abierto in nuevosAbiertos:
                     self.profundidad = max(profundidad, abierto.profundidad)
                     self.insertarNodo(abierto, self.listaAbiertos)
-                listaExpandidos.add(estadoNodoExpandido)
-        return None
-#b = Busqueda()
-#print(b.interseccionAccion)
+                    listaExpandidos.add(nodoExpandido)
+        return "Retorno del metodo buscar() = Fracaso"
+
+    def camino(self, segundos, expandidos, abiertos, profundidad, nodoExpandido, listaExpantidos):
+        nodo = nodoExpandido
+        lista = []
+        while nodo.padre is not None:
+            lista.append([(nodo.padre.id),(nodo.id),(nodo.coste)])
+            nodo = nodo.padre
+        lista = reversed(lista)
+        print("Camino")
+        for x in lista:
+            print(f"{x[0]} ------({x[2]:<19})-----> {x[1]}")
+
+        print(f" Tiempo empleado: {segundos:.10f} segundos")
+        print("Nodos expandidos: ", expandidos)
+        print("  Nodos abiertos: ", abiertos)
+        print("     Profundidad: ", profundidad)
+        print("    Nodo destino: ", nodoExpandido)
+        print("             Fin: ", self.problema.final)
+        print("          Origen: ", self.problema.inicio)
+        #print("Lista expandidos: ", listaExpantidos)
+
 
 class BusquedaAnchura(Busqueda):
 
@@ -150,11 +169,8 @@ class BusquedaAnchura(Busqueda):
         valor = listaNodos.pop(0)
         return valor
 
-    def vacio(self, lista_nodo):
-        if len(lista_nodo) == 0:
-            return True
-        else:
-            return False
+    def vacio(self):
+        return len(self.listaAbiertos) == 0
 
 
 class BusquedaProfundidad(Busqueda):
@@ -162,11 +178,6 @@ class BusquedaProfundidad(Busqueda):
     def __init__(self):
         super().__init__()
         self.listaAbiertos = []
-
-    def crearLista(self, nodo):
-        lista = []
-        lista.append(nodo)
-        return lista
 
     def insertarNodo(self, nodo, listaNodos):
         listaNodos.append(nodo)
@@ -176,50 +187,75 @@ class BusquedaProfundidad(Busqueda):
         valor = listaNodos.pop()
         return valor
 
-    def vacio(self, lista_nodo):
-        if len(lista_nodo) == 0:
-            return True
-        else:
-            return False
-
-
-class FirstFit(Busqueda):
-
-    def __init__(self):
-        super().__init__()
-
-    def crearLista(self, nodo):
-        pass
-
-    def insertar_nodo(self, nodo, listaNodos):
-        pass
-
-    def extraerNodo(self, listaNodos):
-        pass
-
     def vacio(self):
-        pass
+        return len(self.listaAbiertos) == 0
 
 
-class AStar(Busqueda):
+class PrimeroMejor(Busqueda):
 
     def __init__(self):
         super().__init__()
+        self.listaAbiertos = queue.PriorityQueue()
 
-    def crearLista(self, nodo):
-        pass
 
     def insertarNodo(self, nodo, listaNodos):
-        pass
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        nodo.costeMasDistancia = disManh
+        listaNodos.put((nodo.costeMasDistancia, nodo))
+        return listaNodos
 
     def extraerNodo(self, listaNodos):
-        pass
+        return listaNodos.get()[1]
 
     def vacio(self):
-        pass
+        return self.listaAbiertos.empty()
 
-ba = BusquedaProfundidad()
-print(ba.buscar(Estado(ba.problema.final, ba.problema.interseccionesCoordenadas[ba.problema.final][0],
-                       ba.problema.interseccionesCoordenadas[ba.problema.final][1])))
-#p = Problema()
-#print(p.interseccionAccion)
+
+class AEstrella(Busqueda):
+
+    def __init__(self):
+        super().__init__()
+        self.listaAbiertos = queue.PriorityQueue()
+
+    def insertarNodo(self, nodo, listaNodos):
+        disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
+        nodo.costeMasDistancia = disManh + nodo.coste
+        listaNodos.put((nodo.costeMasDistancia, nodo))
+        return listaNodos
+
+    def extraerNodo(self, listaNodos):
+        return listaNodos.get()[1]
+
+    def vacio(self):
+        return self.listaAbiertos.empty()
+
+
+if __name__ == "__main__":
+    while True:
+        print("         1) Búsqueda en Anchura")
+        print("         2) Búsqueda en Profundidad")
+        print("         3) Primero es mejor")
+        print("         4) A Estrella")
+        print("Otro valor) Salir")
+        try:
+            valor = int(input("Introduce un valor numérico, por favor: "))
+        except ValueError:
+            print("Ese no es un número válido.")
+            continue
+
+        match valor:
+            case 1:
+                z = BusquedaAnchura()
+            case 2:
+                z = BusquedaProfundidad()
+            case 3:
+                z = PrimeroMejor()
+            case 4:
+                z = AEstrella()
+            case _:
+                print("Fin programa.....")
+                break
+
+        print(z.buscar(Estado(z.problema.final,
+                              z.problema.interseccionesCoordenadas[z.problema.final][0],
+                              z.problema.interseccionesCoordenadas[z.problema.final][1])))

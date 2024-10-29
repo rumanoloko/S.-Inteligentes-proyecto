@@ -7,7 +7,8 @@ from abc import abstractmethod, ABC
 
 class Problema:
     def __init__(self):
-        nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
+        nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\calle_marila_mariln_500_1.json"
+        #nombre_archivo = r"C:\Users\Vlad\OneDrive - Universidad de Castilla-La Mancha\Escritorio\S.-Inteligentes-proyecto\avenida_de_espania_250_0.json"
         with open(nombre_archivo, 'r') as archivo:
             problema = json.load(archivo)
 
@@ -26,6 +27,7 @@ class Problema:
                 segmento['destination'],
                 segmento['distance'] / (segmento['speed'] / 3.6)
             ))
+
 
 class Estado():
 
@@ -72,20 +74,20 @@ class Nodo:
 class Heuristica:
     @staticmethod
     def calculo_heuristica(estado1: Estado, tuplaCoordenadas):
-        return abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1])
+        return (abs(estado1.longitud - tuplaCoordenadas[0]) + abs(estado1.latitud - tuplaCoordenadas[1]))
 
 
 # Se pone que hereda de ABC para así decir que es una clase Abstracta por lo que cualquiera que herede de esta
 # deberá de implementar los metodos que tiene esta misma.
 class Busqueda(ABC):
 
-    def __init__(self):
+    def __init__(self, listaAbiertos):
         self.problema = Problema()
         self.listaExpantidos = set()
-        self.listaAbiertos = None
+        self.listaAbiertos = listaAbiertos
 
     @abstractmethod
-    def insertarNodo(self, nodo, listaNodos):
+    def insertarNodo(self, nodo):
         pass
 
     @abstractmethod
@@ -133,29 +135,33 @@ class Busqueda(ABC):
         return "Retorno del metodo buscar() = Fracaso"
 
     def camino(self, segundos, expandidos, abiertos, profundidad, nodoExpandido, listaExpantidos):
-        print(f" Tiempo empleado: {segundos:.10f} segundos")
-        print("Nodos expandidos: ", expandidos)
-        print("  Nodos abiertos: ", abiertos)
-        print("     Profundidad: ", profundidad)
-        print("    Nodo destino: ", nodoExpandido)
-        print("             Fin: ",self.problema.final)
-        print("          Origen: ",self.problema.inicio)
-        #print("Lista expandidos: ", listaExpantidos)
         nodo = nodoExpandido
         lista = []
+        tamaño = 0
         while nodo.padre is not None:
             lista.append([(nodo.padre.id),(nodo.id),(nodo.coste)])
+            tamaño += 1
             nodo = nodo.padre
         lista = reversed(lista)
         print("Camino")
         for x in lista:
             print(f"{x[0]} ------({x[2]:<19})-----> {x[1]}")
+        print(" Nr. nodos del camino: ", tamaño)
+        print(f"      Tiempo empleado: {segundos:.10f} segundos")
+        print("     Nodos expandidos: ", expandidos)
+        print("       Nodos abiertos: ", abiertos)
+        print("  Profundidad destino: ", nodo.profundidad)
+        print("     Profundidad max.: ", profundidad)
+        print("         Nodo destino: ", nodoExpandido)
+        print("                  Fin: ", self.problema.final)
+        print("               Origen: ", self.problema.inicio)
+
 
 class BusquedaAnchura(Busqueda):
 
     def __init__(self):
-        super().__init__()
-        self.listaAbiertos = []
+        listaAbiertos = []
+        super().__init__(listaAbiertos)
 
     def insertarNodo(self, nodo, listaNodos):
         listaNodos.append(nodo)
@@ -172,8 +178,8 @@ class BusquedaAnchura(Busqueda):
 class BusquedaProfundidad(Busqueda):
 
     def __init__(self):
-        super().__init__()
-        self.listaAbiertos = []
+        listaAbiertos = []
+        super().__init__(listaAbiertos)
 
     def insertarNodo(self, nodo, listaNodos):
         listaNodos.append(nodo)
@@ -190,8 +196,8 @@ class BusquedaProfundidad(Busqueda):
 class PrimeroMejor(Busqueda):
 
     def __init__(self):
-        super().__init__()
-        self.listaAbiertos = queue.PriorityQueue()
+        listaAbiertos = queue.PriorityQueue()
+        super().__init__(listaAbiertos)
 
 
     def insertarNodo(self, nodo, listaNodos):
@@ -210,8 +216,9 @@ class PrimeroMejor(Busqueda):
 class AEstrella(Busqueda):
 
     def __init__(self):
-        super().__init__()
-        self.listaAbiertos = queue.PriorityQueue()
+        listaAbiertos = queue.PriorityQueue()
+        super().__init__(listaAbiertos)
+
 
     def insertarNodo(self, nodo, listaNodos):
         disManh = Heuristica.calculo_heuristica(nodo.estado, self.problema.interseccionesCoordenadas[self.problema.final])
